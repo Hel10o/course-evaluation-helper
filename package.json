@@ -1,0 +1,19 @@
+{
+  "name": "evaluate-script",
+  "version": "1.0.0",
+  "description": "教学质量管理平台课程评价自动化脚本",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node evaluate.js",
+    "inspect": "node inspect.js",
+    "codegen": "playwright codegen",
+    "check": "node --check evaluate.js && node --check inspect.js && node --check core.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "playwright": "1.60.0"
+  }
+}

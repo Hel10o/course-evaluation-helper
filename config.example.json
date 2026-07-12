@@ -1,0 +1,22 @@
+{
+  "url": "https://example.edu/evaluation",
+  "answerMode": "positive",
+  "uniformAnswer": "非常同意",
+  "perQuestionAnswers": {
+    "1": "无",
+    "11": "无"
+  },
+  "suggestionText": "",
+  "autoSubmit": false,
+  "skipIfNoMatch": false,
+  "headless": false,
+  "keepBrowserOpenOnError": true,
+  "captureRoutineScreenshots": false,
+  "screenshotRetentionDays": 30,
+  "maxScreenshots": 200,
+  "navigationTimeout": 30000,
+  "actionTimeout": 10000,
+  "successTimeout": 20000,
+  "maxScanRounds": 10,
+  "maxCourses": 100
+}

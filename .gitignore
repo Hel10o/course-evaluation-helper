@@ -1,0 +1,6 @@
+node_modules/
+screenshots/
+inspect_output/
+config.json
+*.log
+.DS_Store
