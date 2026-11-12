@@ -1,13 +1,23 @@
 {
   "url": "https://example.edu/evaluation",
-  "answerMode": "positive",
-  "uniformAnswer": "非常同意",
+  "answerMode": "perQuestion",
+  "uniformAnswer": "同意",
   "perQuestionAnswers": {
     "1": "无",
-    "11": "无"
+    "2": "较好",
+    "3": "同意",
+    "4": "有讲解，基本清晰",
+    "5": "涉及较多",
+    "6": "有安排，基本满足",
+    "7": "有反馈，有帮助",
+    "8": "经常",
+    "9": "同意",
+    "10": "满意",
+    "11": "适宜",
+    "12": "满意"
   },
   "suggestionText": "",
-  "autoSubmit": false,
+  "autoSubmit": true,
   "skipIfNoMatch": false,
   "headless": false,
   "keepBrowserOpenOnError": true,

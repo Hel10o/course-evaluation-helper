@@ -117,6 +117,14 @@ async function getVisibleQuestionGroups(page) {
 
 async function getQuestionText(group) {
   return group.evaluate((element) => {
+    // 麦可思当前页面：subject > title/richTextContent 与 content 是同级节点。
+    const subject = element.closest('[class*="_subject-"]');
+    const heading = subject?.querySelector('[class*="_title-"] [class*="_richTextContent-"]');
+    if (heading) {
+      const clone = heading.cloneNode(true);
+      clone.querySelectorAll('[class*="_score-"], .question_type, .question_no').forEach(node => node.remove());
+      if (clone.textContent.trim()) return clone.textContent.trim();
+    }
     const formItem = element.closest('.ant-form-item');
     const label = formItem?.querySelector('.ant-form-item-label');
     if (label?.textContent?.trim()) return label.textContent.trim();
@@ -249,6 +257,58 @@ async function fillCurrentPage(page, config) {
   return { total: groups.length, answered, skipped };
 }
 
+async function collectQuestionDiagnostics(page, config) {
+  const groups = await getVisibleQuestionGroups(page);
+  const questions = [];
+  for (let index = 0; index < groups.length; index++) {
+    const group = groups[index];
+    const labels = await group.$$(SELECTORS.optionLabels);
+    const options = [];
+    for (const label of labels) {
+      const input = await label.$(SELECTORS.radioInput);
+      options.push({
+        text: ((await label.textContent()) || '').trim(),
+        checked: input ? await input.isChecked().catch(() => false) : false,
+      });
+    }
+    questions.push({
+      number: index + 1,
+      question: await getQuestionText(group),
+      target: answerForQuestion(config, index),
+      answered: await groupIsAnswered(group),
+      options,
+    });
+  }
+  return questions;
+}
+
+async function fillWithManualReview(page, config, {
+  interactive = Boolean(process.stdin.isTTY),
+  prompt = waitForEnter,
+  onIncomplete = async () => {},
+} = {}) {
+  while (true) {
+    const result = await fillCurrentPage(page, config);
+    if (result) return result;
+
+    const questions = await collectQuestionDiagnostics(page, config);
+    await onIncomplete(questions);
+    if (!questions.length || config.autoSubmit || !interactive) return null;
+
+    console.log('\n当前填答尚未完成。请在浏览器中手动选择无法匹配的答案。');
+    console.log('已选答案会保留；继续后会重新检查题目和新出现的条件题。');
+    await prompt('>>> 手动选择后按回车继续填答；按 Ctrl+C 退出（此处不会提交）...');
+  }
+}
+
+function saveQuestionDiagnostics(questions) {
+  const directory = path.resolve(__dirname, 'inspect_output');
+  fs.mkdirSync(directory, { recursive: true });
+  const file = path.join(directory, 'unanswered_questions.json');
+  fs.writeFileSync(file, JSON.stringify({ time: new Date().toISOString(), questions }, null, 2));
+  console.log(`📄 题目与选项诊断已保存: ${file}`);
+}
+
 async function fillSuggestion(page, config) {
   if (!config.suggestionText) return;
   const textareas = await page.$$(SELECTORS.suggestionTextarea);
@@ -264,12 +324,29 @@ async function fillSuggestion(page, config) {
 
 async function findVisibleButton(page, allowedTexts, scope = null) {
   const root = scope ?? page;
-  const buttons = await root.$$('button, [role="button"]');
-  for (const button of buttons) {
-    const text = ((await button.textContent().catch(() => '')) || '').replace(/\s+/g, ' ').trim();
-    const visible = await button.isVisible().catch(() => false);
-    const enabled = await button.isEnabled().catch(() => false);
-    if (visible && enabled && allowedTexts.some((pattern) => pattern.test(text))) return button;
+  const semanticSelector = 'button, [role="button"], a, input[type="button"], input[type="submit"]';
+  // 平台按钮可能把两个汉字排成“提 交”，也可能由普通 div/span 实现。
+  for (const selector of [semanticSelector, 'div, span']) {
+    const matches = [];
+    for (const button of await root.$$(selector)) {
+      const details = await button.evaluate((element, semantic) => {
+        const compact = text => (text || '').replace(/\s+/g, '');
+        const text = compact(element.tagName === 'INPUT' ? element.value : element.textContent);
+        return {
+          text,
+          disabled: Boolean(element.closest('[aria-disabled="true"]')),
+          insideButton: Boolean(element.parentElement?.closest(semantic)),
+          hasSameTextChild: Array.from(element.children).some(child => compact(child.textContent) === text),
+        };
+      }, semanticSelector).catch(() => null);
+      if (!details || details.disabled || !allowedTexts.some(pattern => pattern.test(details.text))) continue;
+      if (selector !== semanticSelector && (details.insideButton || details.hasSameTextChild)) continue;
+      if (await button.isVisible().catch(() => false) && await button.isEnabled().catch(() => false)) {
+        matches.push(button);
+      }
+    }
+    if (matches.length > 1) throw new Error('找到多个同名操作按钮，无法唯一定位');
+    if (matches.length === 1) return matches[0];
   }
   return null;
 }
@@ -326,49 +403,80 @@ async function waitForSubmissionSuccess(page, config) {
   console.log('✅ 平台已明确确认评价完成');
 }
 
-async function submitEvaluation(page, config) {
-  await assertPageComplete(page);
-  const submit = await findVisibleButton(page, [/^提交$/, /^提交评价$/, /^完成评价$/]);
+async function submitEvaluation(page, config, {
+  validatePage = assertPageComplete,
+  prompt = waitForEnter,
+} = {}) {
+  await validatePage(page, config);
+  const submitTexts = [/^提交$/, /^提交评价$/, /^完成评价$/];
+  let submit = await findVisibleButton(page, submitTexts);
   if (!submit) throw new Error('找不到唯一、可见且可点击的提交按钮');
+  await submit.scrollIntoViewIfNeeded({ timeout: config.actionTimeout });
 
   if (!config.autoSubmit) {
     console.log('\n⚠️ 即将提交，请在浏览器中复核答案。');
-    await waitForEnter('>>> 确认无误后按回车提交；按 Ctrl+C 取消...');
-    await assertPageComplete(page);
+    await prompt('>>> 已定位页面底部提交按钮，确认无误后按回车提交；按 Ctrl+C 取消...');
+    await validatePage(page, config);
   } else {
     console.log('⏩ autoSubmit=true，提交前完整性检查已通过');
   }
 
+  // 人工复核期间页面可能重渲染或滚动，提交前重新定位当前按钮。
+  submit = await findVisibleButton(page, submitTexts);
+  if (!submit) throw new Error('确认后找不到当前提交按钮');
+  await submit.scrollIntoViewIfNeeded({ timeout: config.actionTimeout });
   await submit.click({ timeout: config.actionTimeout });
   await handleSubmitConfirmation(page, config);
   await waitForSubmissionSuccess(page, config);
 }
 
-async function goToNextEvaluation(page, config) {
-  const next = await findVisibleButton(page, [
+async function goToNextEvaluation(page, config, { isReady } = {}) {
+  const nextTexts = [
     /^下一门(?:课程)?$/,
     /^下一位(?:教师|老师)?$/,
     /^继续评价$/,
     /^下一项$/,
-  ]);
+  ];
+  let next;
+  await waitUntil(async () => {
+    next = await findVisibleButton(page, nextTexts);
+    return Boolean(next);
+  }, Math.min(config.actionTimeout, 5000));
   if (!next) return false;
 
+  await next.scrollIntoViewIfNeeded({ timeout: config.actionTimeout });
   await next.click({ timeout: config.actionTimeout });
+  console.log('➡️ 已点击“下一门课程”，等待新问卷加载');
   const ready = await waitUntil(async () => {
     const groups = await getVisibleQuestionGroups(page);
     const bodyText = await page.locator('body').innerText({ timeout: 1000 }).catch(() => '');
-    return groups.length > 0 && !/评价完成|提交成功|评价成功/.test(bodyText);
+    if (/评价完成|提交成功|评价成功/.test(bodyText)) return false;
+    if (isReady) return isReady();
+    if (!groups.length) return false;
+    // 弹窗先消失、课程随后加载时，不能把仍留在页面上的上一门已填问卷当作新课程。
+    for (const group of groups) {
+      if (!await groupIsAnswered(group)) return true;
+    }
+    return false;
   }, config.navigationTimeout, 200);
   if (!ready) throw new Error('点击下一门课程后，没有加载出新的评价题目');
   return true;
 }
 
-async function run() {
-  const config = loadConfig();
+async function run({
+  config = loadConfig(),
+  fillPage = fillWithManualReview,
+  validatePage = assertPageComplete,
+  isQuestionnaireReady = async page => (await getVisibleQuestionGroups(page)).length > 0,
+  isNextQuestionnaireReady,
+  getActionSurface = async page => page,
+  fillSuggestionPage = fillSuggestion,
+  banner = '教学质量管理平台 — 安全填答模式',
+} = {}) {
   pruneScreenshots(config);
 
   console.log('========================================');
-  console.log('  教学质量管理平台 — 安全填答模式');
+  console.log(`  ${banner}`);
   console.log('========================================\n');
 
   let browser;
@@ -393,7 +501,7 @@ async function run() {
     await waitForEnter('>>> 准备好后按回车开始...');
 
     const initialReady = await waitUntil(
-      async () => (await getVisibleQuestionGroups(page)).length > 0,
+      () => isQuestionnaireReady(page),
       config.navigationTimeout,
       200,
     );
@@ -403,14 +511,19 @@ async function run() {
       console.log(`\n════════ 第 ${courseNumber} 门课程 ════════`);
       if (config.captureRoutineScreenshots) await takeScreenshot(page, `course${courseNumber}_before`);
 
-      const result = await fillCurrentPage(page, config);
+      const result = await fillPage(page, config, {
+        onIncomplete: saveQuestionDiagnostics,
+      });
       if (!result) throw new Error(`第 ${courseNumber} 门课程未完整填答`);
-      await fillSuggestion(page, config);
-      await submitEvaluation(page, config);
+      await fillSuggestionPage(page, config);
+      const actionSurface = await getActionSurface(page);
+      await submitEvaluation(actionSurface, config, { validatePage: () => validatePage(page, config) });
 
       if (config.captureRoutineScreenshots) await takeScreenshot(page, `course${courseNumber}_success`);
-      if (!await goToNextEvaluation(page, config)) {
-        console.log(`\n🏁 全部完成，共处理 ${courseNumber} 门课程`);
+      if (!await goToNextEvaluation(actionSurface, config, {
+        isReady: isNextQuestionnaireReady ? () => isNextQuestionnaireReady(page) : undefined,
+      })) {
+        console.log(`\n🏁 已成功提交 ${courseNumber} 门课程；未检测到“下一门课程”入口，本次结束`);
         return;
       }
     }
@@ -438,10 +551,16 @@ if (require.main === module) {
 }
 
 module.exports = {
+  assertPageComplete,
+  collectQuestionDiagnostics,
   fillCurrentPage,
+  fillWithManualReview,
   findVisibleButton,
+  getVisibleQuestionGroups,
+  goToNextEvaluation,
   loadConfig,
   run,
   SELECTORS,
+  selectAnswerForGroup,
   submitEvaluation,
 };

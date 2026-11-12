@@ -1,0 +1,270 @@
+[
+  {
+    "number": 1,
+    "options": [
+      {
+        "text": "无",
+        "checked": false
+      },
+      {
+        "text": "有（如有，请在备注栏说明）",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 2,
+    "options": [
+      {
+        "text": "不合格",
+        "checked": false
+      },
+      {
+        "text": "需要改进",
+        "checked": false
+      },
+      {
+        "text": "一般",
+        "checked": false
+      },
+      {
+        "text": "较好",
+        "checked": false
+      },
+      {
+        "text": "优秀",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 3,
+    "options": [
+      {
+        "text": "非常不同意",
+        "checked": false
+      },
+      {
+        "text": "不同意",
+        "checked": false
+      },
+      {
+        "text": "一般",
+        "checked": false
+      },
+      {
+        "text": "同意",
+        "checked": false
+      },
+      {
+        "text": "非常同意",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 4,
+    "options": [
+      {
+        "text": "没有重难点讲解",
+        "checked": false
+      },
+      {
+        "text": "有讲解，但比较模糊",
+        "checked": false
+      },
+      {
+        "text": "有讲解，基本清晰",
+        "checked": false
+      },
+      {
+        "text": "有讲解，讲解非常清晰且过程中不断强调",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 5,
+    "options": [
+      {
+        "text": "没有涉及",
+        "checked": false
+      },
+      {
+        "text": "涉及较少",
+        "checked": false
+      },
+      {
+        "text": "涉及较多",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 6,
+    "options": [
+      {
+        "text": "没有安排",
+        "checked": false
+      },
+      {
+        "text": "有安排但并不满足",
+        "checked": false
+      },
+      {
+        "text": "有安排，基本满足",
+        "checked": false
+      },
+      {
+        "text": "有详细的安排且满足",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 7,
+    "options": [
+      {
+        "text": "没有反馈",
+        "checked": false
+      },
+      {
+        "text": "有反馈，没有帮助",
+        "checked": false
+      },
+      {
+        "text": "有反馈，略有帮助",
+        "checked": false
+      },
+      {
+        "text": "有反馈，有帮助",
+        "checked": false
+      },
+      {
+        "text": "有反馈，非常有帮助",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 8,
+    "options": [
+      {
+        "text": "从不",
+        "checked": false
+      },
+      {
+        "text": "偶尔",
+        "checked": false
+      },
+      {
+        "text": "经常",
+        "checked": false
+      },
+      {
+        "text": "总是",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 9,
+    "options": [
+      {
+        "text": "非常不同意",
+        "checked": false
+      },
+      {
+        "text": "不同意",
+        "checked": false
+      },
+      {
+        "text": "一般",
+        "checked": false
+      },
+      {
+        "text": "同意",
+        "checked": false
+      },
+      {
+        "text": "非常同意",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 10,
+    "options": [
+      {
+        "text": "非常不满意",
+        "checked": false
+      },
+      {
+        "text": "不满意",
+        "checked": false
+      },
+      {
+        "text": "一般",
+        "checked": false
+      },
+      {
+        "text": "满意",
+        "checked": false
+      },
+      {
+        "text": "非常满意",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 11,
+    "options": [
+      {
+        "text": "非常快",
+        "checked": false
+      },
+      {
+        "text": "快",
+        "checked": false
+      },
+      {
+        "text": "适宜",
+        "checked": false
+      },
+      {
+        "text": "慢",
+        "checked": false
+      },
+      {
+        "text": "非常慢",
+        "checked": false
+      }
+    ]
+  },
+  {
+    "number": 12,
+    "options": [
+      {
+        "text": "非常不满意",
+        "checked": false
+      },
+      {
+        "text": "不满意",
+        "checked": false
+      },
+      {
+        "text": "一般",
+        "checked": false
+      },
+      {
+        "text": "满意",
+        "checked": false
+      },
+      {
+        "text": "非常满意",
+        "checked": false
+      }
+    ]
+  }
+]

@@ -11,6 +11,7 @@ const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
 const { validateConfig } = require('./core');
+const { readQuestionnaire } = require('./questionnaire-dom');
 
 const configPath = path.resolve(__dirname, 'config.json');
 const URL = validateConfig(JSON.parse(fs.readFileSync(configPath, 'utf8'))).url;
@@ -47,6 +48,12 @@ async function main() {
   // 截图
   await page.screenshot({ path: path.join(outDir, 'page.png'), fullPage: true });
   console.log('📸 截图: inspect_output/page.png');
+
+  const questionnaire = await readQuestionnaire(page);
+  fs.writeFileSync(path.join(outDir, 'questionnaire.json'), JSON.stringify({
+    questions: questionnaire.questions, unsupported: questionnaire.unsupported,
+  }, null, 2), 'utf8');
+  console.log('📄 完整题干、选项和必填约束: inspect_output/questionnaire.json');
 
   // 执行 DOM 分析脚本
   const info = await page.evaluate(() => {

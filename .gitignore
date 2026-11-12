@@ -2,5 +2,6 @@ node_modules/
 screenshots/
 inspect_output/
 config.json
+templates/
 *.log
 .DS_Store

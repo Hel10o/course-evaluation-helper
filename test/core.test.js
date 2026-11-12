@@ -29,6 +29,18 @@ test('positive mode refuses unknown binary questions', () => {
   assert.equal(chooseOptionIndex(['是', '否'], '__POSITIVE__'), -1);
 });
 
+test('positive mode recognizes the full-sentence answer from the actual questionnaire', () => {
+  const options = [
+    '没有重难点讲解',
+    '有讲解，但比较模糊',
+    '有讲解，基本清晰',
+    '有讲解，讲解非常清晰且过程中不断强调',
+  ];
+  assert.equal(chooseOptionIndex(options, '__POSITIVE__'), 3);
+  assert.equal(chooseOptionIndex([...options].reverse(), '__POSITIVE__'), 0);
+  assert.equal(chooseOptionIndex(['没有讲解非常清晰的内容'], '__POSITIVE__'), -1);
+});
+
 test('configured answers use exact normalized matching', () => {
   assert.equal(chooseOptionIndex(['非常满意', '满意'], '满意'), 1);
   assert.equal(chooseOptionIndex(['非常同意', '同意'], '非常满意'), 0);

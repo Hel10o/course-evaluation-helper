@@ -7,10 +7,13 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "node evaluate.js",
+    "start": "node evaluate-current.js",
+    "start:adaptive": "node evaluate-adaptive.js",
+    "start:current": "node evaluate-current.js",
+    "start:generic": "node evaluate.js",
     "inspect": "node inspect.js",
     "codegen": "playwright codegen",
-    "check": "node --check evaluate.js && node --check inspect.js && node --check core.js",
+    "check": "node --check evaluate.js && node --check inspect.js && node --check core.js && node --check fixed-questionnaire.js && node --check evaluate-current.js && node --check questionnaire-dom.js && node --check adaptive-core.js && node --check adaptive-store.js && node --check adaptive-review.js && node --check adaptive-session.js && node --check evaluate-adaptive.js",
     "test": "node --test"
   },
   "dependencies": {
